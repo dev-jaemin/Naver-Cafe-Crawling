@@ -51,9 +51,10 @@ class NaverCafe:
             pageurl = f"https://cafe.naver.com/{self.name}?iframe_url=/ArticleList.nhn%3Fsearch.clubid={self.clubid}%26search.menuid={menuid}%26userDisplay={str(userDisplay)}%26search.boardtype={boardtype}%26search.specialmenutype=%26search.totalCount=62%26search.cafeId=30853297%26search.page={str(page)}"
             
             self.driver.get(pageurl)
-            #self.driver.implicitly_wait(3)
+            # TODO : time.sleep 쓰지 말고, 해당 컴포넌트 로드 완료되는 시점에 바로 코드 실행할 수 있도록 짜기
             time.sleep(3)
 
+            # for iframe
             self.driver.switch_to.frame("cafe_main")
             
             table_rows = self.driver.find_elements(By.CSS_SELECTOR, '.article-board > table > tbody > tr')
@@ -69,7 +70,7 @@ class NaverCafe:
                 except NoSuchElementException:
                     continue
 
-
+            # append candidate contents if there is a comment or a nickname which has mbti keywords
             articleid_list.extend([content["inner_number"] for content in contents if content["comment"] or content["nickname"]])
 
         return articleid_list
@@ -87,16 +88,18 @@ class NaverCafe:
         for article_id in article_ids:
             pageurl = f"https://cafe.naver.com/mbticafe?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D{self.clubid}%2526page%3D{page}%2526menuid%3D{menuid}%2526boardtype%3D{boardtype}%2526articleid%3D{article_id}%2526referrerAllArticles%3Dfalse"
             self.driver.get(pageurl)
-            # self.driver.implicitly_wait(3)
+            # TODO : time.sleep 쓰지 말고, 해당 컴포넌트 로드 완료되는 시점에 바로 코드 실행할 수 있도록 짜기
             time.sleep(3)
             self.driver.switch_to.frame("cafe_main")
 
             (article_id, content, label_nickname) = self._get_content(article_id)
+
             # Only labeled nicknames are saved
             if label_nickname:
                 article_wr.writerow([ article_id, content, label_nickname ])
 
             (question, answer, label_answer_nickname) = self._get_QNA()
+            # If no reple, do not save
             if question:
                 qna_wr.writerow([ question, answer, label_answer_nickname ])
             
@@ -111,8 +114,9 @@ class NaverCafe:
         soup = BeautifulSoup(html, "html.parser")
         article_element = soup.find("div", {"class":"article_viewer"})
 
+        # for double(or more) \n -> single \n
         content = re.sub("\n+", "\n", article_element.text.strip())
-            
+
         nickname = soup.find("button", {"class":"nickname"}).text.strip()
         label_nickname = self.preprocessing.label_nickname(nickname)
 
@@ -132,10 +136,13 @@ class NaverCafe:
         
         try:
             if comment_element:
+                # for double(or more) \n -> single \n
                 content = re.sub("\n+", "\n", article_element.text.strip())
                 comment = re.sub("\n+", "\n", comment_element.text.strip())
                 nickname = soup.find("div", {"class":"comment_nick_info"}).text.strip()
-
+                
+                # For using only first/last n sentences.
+                # If you want to change n, change 100 to other number you want. (I recommend last_n = 3, first_n = 2)
                 question = self.preprocessing.last_n_sentences(kiwi.split_into_sents(content), 100)
                 answer = self.preprocessing.first_n_sentences(kiwi.split_into_sents(comment), 100)
                 label_nickname = self.preprocessing.label_nickname(nickname)
