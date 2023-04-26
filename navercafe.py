@@ -5,8 +5,6 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import NoSuchElementException
 
-from bs4 import BeautifulSoup
-import pandas as pd
 import pyperclip
 import csv
 import re
@@ -37,27 +35,32 @@ class NaverCafe:
         div_pw.send_keys(Keys.CONTROL, 'v')
 
         self.driver.find_element(By.ID, 'log.login').click()
-        
+    
+    def _getElementsAfterWaiting(self, css_selector):
+        elements = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
+
+        while len(elements) == 0:   
+            time.sleep(0.01)
+            elements = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
+
+            continue
+
+        return elements
         
     def get_article_ids(self, menuid, num_page):
         boardtype = 'L'
         userDisplay = 50
-        pageurl = f"https://cafe.naver.com/{self.name}?iframe_url=/ArticleList.nhn%3Fsearch.clubid={self.clubid}%26search.boardtype={boardtype}%26search.menuid={menuid}%26search.marketBoardTab=D%26search.specialmenutype=%26userDisplay={str(userDisplay)}"
-        self.driver.get(pageurl)
-        self.driver.switch_to.frame("cafe_main")
         articleid_list = []
 
         for page in range(1, num_page + 1):
             pageurl = f"https://cafe.naver.com/{self.name}?iframe_url=/ArticleList.nhn%3Fsearch.clubid={self.clubid}%26search.menuid={menuid}%26userDisplay={str(userDisplay)}%26search.boardtype={boardtype}%26search.specialmenutype=%26search.totalCount=62%26search.cafeId=30853297%26search.page={str(page)}"
             
             self.driver.get(pageurl)
-            # TODO : time.sleep 쓰지 말고, 해당 컴포넌트 로드 완료되는 시점에 바로 코드 실행할 수 있도록 짜기
-            time.sleep(3)
 
             # for iframe
             self.driver.switch_to.frame("cafe_main")
             
-            table_rows = self.driver.find_elements(By.CSS_SELECTOR, '.article-board > table > tbody > tr')
+            table_rows = self._getElementsAfterWaiting('.article-board > table > tbody > tr')
             contents = []
             for row in table_rows:
                 # 공지, 추천글 제외
@@ -88,8 +91,6 @@ class NaverCafe:
         for article_id in article_ids:
             pageurl = f"https://cafe.naver.com/mbticafe?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D{self.clubid}%2526page%3D{page}%2526menuid%3D{menuid}%2526boardtype%3D{boardtype}%2526articleid%3D{article_id}%2526referrerAllArticles%3Dfalse"
             self.driver.get(pageurl)
-            # TODO : time.sleep 쓰지 말고, 해당 컴포넌트 로드 완료되는 시점에 바로 코드 실행할 수 있도록 짜기
-            time.sleep(3)
             self.driver.switch_to.frame("cafe_main")
 
             (article_id, content, label_nickname) = self._get_content(article_id)
@@ -110,14 +111,12 @@ class NaverCafe:
 
 
     def _get_content(self, article_id):
-        html = self.driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
-        article_element = soup.find("div", {"class":"article_viewer"})
+        article_element = self._getElementsAfterWaiting(".article_viewer")[0]
 
         # for double(or more) \n -> single \n
         content = re.sub("\n+", "\n", article_element.text.strip())
 
-        nickname = soup.find("button", {"class":"nickname"}).text.strip()
+        nickname = self._getElementsAfterWaiting("button.nickname")[0].text.strip()
         label_nickname = self.preprocessing.label_nickname(nickname)
 
         return (
@@ -129,22 +128,21 @@ class NaverCafe:
     def _get_QNA(self):
         kiwi = Kiwi()
 
-        html = self.driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
-        article_element = soup.find("div", {"class":"article_viewer"})
-        comment_element = soup.find("span", {"class":"text_comment"})
+        article_element = self._getElementsAfterWaiting("div.article_viewer")[0]
+        comment_elements = self.driver.find_elements(By.CSS_SELECTOR, "span.text_comment")
+        comment_element = comment_elements[0] if len(comment_elements) > 0 else None
         
         try:
             if comment_element:
                 # for double(or more) \n -> single \n
                 content = re.sub("\n+", "\n", article_element.text.strip())
                 comment = re.sub("\n+", "\n", comment_element.text.strip())
-                nickname = soup.find("div", {"class":"comment_nick_info"}).text.strip()
+                nickname = self._getElementsAfterWaiting("div.comment_nick_info")[0].text.strip()
                 
                 # For using only first/last n sentences.
                 # If you want to change n, change 100 to other number you want. (I recommend last_n = 3, first_n = 2)
-                question = self.preprocessing.last_n_sentences(kiwi.split_into_sents(content), 100)
-                answer = self.preprocessing.first_n_sentences(kiwi.split_into_sents(comment), 100)
+                question = self.preprocessing.last_n_sentences(kiwi.split_into_sents(content), 3)
+                answer = self.preprocessing.first_n_sentences(kiwi.split_into_sents(comment), 2)
                 label_nickname = self.preprocessing.label_nickname(nickname)
 
                 if label_nickname:
