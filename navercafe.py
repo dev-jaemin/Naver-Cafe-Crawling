@@ -21,6 +21,16 @@ class NaverCafe:
         self.driver = Chrome(service=Service(ChromeDriverManager().install()))
         self.driver.get(f"https://cafe.naver.com/{name}")
         self.preprocessing = Preprocessing()
+        self.pool = ConnectionPool(
+            minconn=1,
+            maxconn=10,
+            host=os.environ['DB_HOST'],
+            port=os.environ['DB_PORT'],
+            user=os.environ['DB_USER'],
+            password=os.environ['DB_PASSWORD'],
+            database=os.environ['DB_DATABASE']
+        )
+
 
     def enter_id_pw(self, userid, userpw):
         self.driver.get('https://nid.naver.com/nidlogin.login')
@@ -181,35 +191,13 @@ class NaverCafe:
             return (None, None, None, None, None)
     
     def insert_content_to_DB(self, data):
-        # Connection Pool 객체 생성
-        connection_pool = ConnectionPool(
-            minconn=1,
-            maxconn=10,
-            host=os.environ['DB_HOST'],
-            port=os.environ['DB_PORT'],
-            user=os.environ['DB_USER'],
-            password=os.environ['DB_PASSWORD'],
-            database=os.environ['DB_DATABASE']
-        )
-
         # 데이터 INSERT
         table_name = "content"
         columns = ["article_id", "menu_id", "content", "mbti"]
-        connection_pool.insert_data(table_name, columns, data)
+        self.pool.insert_data(table_name, columns, data)
 
     def insert_qna_to_DB(self, data):
-        # Connection Pool 객체 생성
-        connection_pool = ConnectionPool(
-            minconn=1,
-            maxconn=10,
-            host=os.environ['DB_HOST'],
-            port=os.environ['DB_PORT'],
-            user=os.environ['DB_USER'],
-            password=os.environ['DB_PASSWORD'],
-            database=os.environ['DB_DATABASE']
-        )
-
         # 데이터 INSERT
         table_name = "qna"
         columns = ["article_id", "menu_id", "q", "a", "mbti"]
-        connection_pool.insert_data(table_name, columns, data)
+        self.pool.insert_data(table_name, columns, data)
