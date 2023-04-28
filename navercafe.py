@@ -6,11 +6,12 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import NoSuchElementException
 
 import pyperclip
-import csv
 import re
 import time
 from kiwipiepy import Kiwi
 from preprocessing import Preprocessing
+from db_helper import ConnectionPool
+import os
 
 
 class NaverCafe:
@@ -47,13 +48,13 @@ class NaverCafe:
 
         return elements
 
-    def get_article_ids(self, menuid, num_page):
+    def get_article_ids(self, menu_id, num_page):
         boardtype = 'L'
         userDisplay = 50
         articleid_list = []
 
         for page in range(1, num_page + 1):
-            pageurl = f"https://cafe.naver.com/{self.name}?iframe_url=/ArticleList.nhn%3Fsearch.clubid={self.clubid}%26search.menuid={menuid}%26userDisplay={str(userDisplay)}%26search.boardtype={boardtype}%26search.specialmenutype=%26search.totalCount=62%26search.cafeId=30853297%26search.page={str(page)}"
+            pageurl = f"https://cafe.naver.com/{self.name}?iframe_url=/ArticleList.nhn%3Fsearch.clubid={self.clubid}%26search.menuid={menu_id}%26userDisplay={str(userDisplay)}%26search.boardtype={boardtype}%26search.specialmenutype=%26search.totalCount=62%26search.cafeId=30853297%26search.page={str(page)}"
 
             self.driver.get(pageurl)
 
@@ -80,39 +81,48 @@ class NaverCafe:
 
         return articleid_list
 
-    def get_articles(self, menuid, article_ids):
+    def get_articles(self, menu_id, article_ids):
         boardtype = 'L'
         page = 1
 
-        article_file = open(f"{menuid}_article.csv", 'w',
-                            encoding="utf-8", newline='')
-        article_wr = csv.writer(article_file)
-
-        qna_file = open(f"{menuid}_qna.csv", 'w', encoding="utf-8", newline='')
-        qna_wr = csv.writer(qna_file)
-
-        for article_id in article_ids:
-            pageurl = f"https://cafe.naver.com/mbticafe?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D{self.clubid}%2526page%3D{page}%2526menuid%3D{menuid}%2526boardtype%3D{boardtype}%2526articleid%3D{article_id}%2526referrerAllArticles%3Dfalse"
+        for count, article_id in enumerate(article_ids):
+            pageurl = f"https://cafe.naver.com/mbticafe?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D{self.clubid}%2526page%3D{page}%2526menu_id%3D{menu_id}%2526boardtype%3D{boardtype}%2526articleid%3D{article_id}%2526referrerAllArticles%3Dfalse"
             self.driver.get(pageurl)
             self.driver.switch_to.frame("cafe_main")
 
-            (article_id, content, label_nickname) = self._get_content(article_id)
+            contents = []
+            qnas = []
+
+            content = self._get_content(article_id, menu_id)
 
             # Only labeled nicknames are saved
-            if label_nickname:
-                article_wr.writerow([article_id, content, label_nickname])
+            if content[3]:
+                contents.append(content)
 
-            (question, answer, label_answer_nickname) = self._get_QNA()
+            qna = self._get_QNA(article_id, menu_id)
             # If no reple, do not save
-            if question:
-                qna_wr.writerow([question, answer, label_answer_nickname])
+            if qna[2]:
+                qnas.append(qna)
 
-        print(f"menu : {menuid}'s {len(article_ids)} articles download done.")
+            # 100개 단위로 DB에 저장
+            if count % 100:
+                self.insert_content_to_DB(contents)
+                self.insert_qna_to_DB(qnas)
 
-        article_file.close()
-        qna_file.close()
+                contents.clear()
+                qnas.clear()
 
-    def _get_content(self, article_id):
+            if len(contents) > 0:
+                self.insert_content_to_DB(contents)
+                contents.clear()
+            
+            if len(qnas) > 0:
+                self.insert_qna_to_DB(qnas)
+                qnas.clear()
+
+        print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
+
+    def _get_content(self, article_id, menu_id):
         article_element = self._getElementsAfterWaiting(".article_viewer")[0]
 
         # for double(or more) \n -> single \n
@@ -124,11 +134,12 @@ class NaverCafe:
 
         return (
             article_id,
+            menu_id,
             content,
             label_nickname
         )
 
-    def _get_QNA(self):
+    def _get_QNA(self, article_id, menu_id):
         kiwi = Kiwi()
 
         article_element = self._getElementsAfterWaiting(
@@ -156,6 +167,8 @@ class NaverCafe:
 
                 if label_nickname:
                     return (
+                        article_id,
+                        menu_id,
                         question,
                         answer,
                         label_nickname
@@ -165,4 +178,38 @@ class NaverCafe:
             else:
                 raise ValueError
         except:
-            return (None, None, None)
+            return (None, None, None, None, None)
+    
+    def insert_content_to_DB(self, data):
+        # Connection Pool 객체 생성
+        connection_pool = ConnectionPool(
+            minconn=1,
+            maxconn=10,
+            host=os.environ['DB_HOST'],
+            port=os.environ['DB_PORT'],
+            user=os.environ['DB_USER'],
+            password=os.environ['DB_PASSWORD'],
+            database=os.environ['DB_DATABASE']
+        )
+
+        # 데이터 INSERT
+        table_name = "content"
+        columns = ["article_id", "menu_id", "content", "mbti"]
+        connection_pool.insert_data(table_name, columns, data)
+
+    def insert_qna_to_DB(self, data):
+        # Connection Pool 객체 생성
+        connection_pool = ConnectionPool(
+            minconn=1,
+            maxconn=10,
+            host=os.environ['DB_HOST'],
+            port=os.environ['DB_PORT'],
+            user=os.environ['DB_USER'],
+            password=os.environ['DB_PASSWORD'],
+            database=os.environ['DB_DATABASE']
+        )
+
+        # 데이터 INSERT
+        table_name = "qna"
+        columns = ["article_id", "menu_id", "q", "a", "mbti"]
+        connection_pool.insert_data(table_name, columns, data)
