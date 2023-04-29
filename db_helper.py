@@ -21,9 +21,6 @@ class ConnectionPool:
         self._create_pool()
 
     def _create_pool(self):
-        """
-        Connection Pool 생성
-        """
         if not self.__pool:
             try:
                 self.__pool = pool.SimpleConnectionPool(
@@ -50,11 +47,8 @@ class ConnectionPool:
 
         columns_str = ','.join(columns)
 
-        # values = ','.join(['%s'] * len(columns))
-
         insert_query = f"INSERT INTO {table_name} ({columns_str}) VALUES %s"
 
-        # 데이터 INSERT
         try:
             extras.execute_values(cursor, insert_query, data)
             conn.commit()
