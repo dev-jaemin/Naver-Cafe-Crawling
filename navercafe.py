@@ -97,15 +97,8 @@ class NaverCafe:
             self.driver.get(pageurl)
             self.driver.switch_to.frame("cafe_main")
 
-            contents = []
             qnas = []
             comments = []
-
-            content = self._get_content(article_id, menu_id)
-
-            # Only labeled nicknames are saved
-            if content[3]:
-                contents.append(content)
 
             qna = self._get_QNA(article_id, menu_id)
             # If no reple, do not save
@@ -116,17 +109,11 @@ class NaverCafe:
 
             # 100개 단위로 DB에 저장
             if count % 100:
-                self.insert_content_to_DB(contents)
                 self.insert_qna_to_DB(qnas)
                 self.insert_comments_to_DB(comments)
 
-                contents.clear()
                 qnas.clear()
                 comments.clear()
-
-            if len(contents) > 0:
-                self.insert_content_to_DB(contents)
-                contents.clear()
 
             if len(qnas) > 0:
                 self.insert_qna_to_DB(qnas)
@@ -137,23 +124,6 @@ class NaverCafe:
                 comments.clear()
 
         print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
-
-    def _get_content(self, article_id, menu_id):
-        article_element = self._getElementsAfterWaiting(".article_viewer")[0]
-
-        # for double(or more) \n -> single \n
-        content = re.sub("\n+", "\n", article_element.text.strip())
-
-        nickname = self._getElementsAfterWaiting(
-            "button.nickname")[0].text.strip()
-        label_nickname = self.preprocessing.label_nickname(nickname)
-
-        return (
-            article_id,
-            menu_id,
-            content,
-            label_nickname
-        )
 
     def _get_QNA(self, article_id, menu_id):
         kiwi = Kiwi()
@@ -225,12 +195,6 @@ class NaverCafe:
                     ))
 
         return comments
-
-    def insert_content_to_DB(self, data):
-        # 데이터 INSERT
-        table_name = "content"
-        columns = ["article_id", "menu_id", "content", "mbti"]
-        self.pool.insert_data(table_name, columns, data)
 
     def insert_qna_to_DB(self, data):
         # 데이터 INSERT
