@@ -80,15 +80,14 @@ class NaverCafe:
                 try:
                     contents.append({
                         "inner_number": int(row.find_element(By.CSS_SELECTOR, '.inner_number').text.strip()),
-                        "comment": row.find_element(By.CSS_SELECTOR, '.inner_number') != None,
-                        "nickname": self.preprocessing.label_nickname(row.find_element(By.CSS_SELECTOR, '.pers_nick_area').text.strip())
+                        "has_comment": len(row.find_elements(By.CSS_SELECTOR, '.cmt')) > 0
                     })
                 except NoSuchElementException:
                     continue
 
             # append candidate contents if there is a comment or a nickname which has mbti keywords
             articleid_list.extend([content["inner_number"]
-                                  for content in contents if content["comment"] or content["nickname"]])
+                                  for content in contents if content["has_comment"]])
 
         return articleid_list
 
