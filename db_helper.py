@@ -43,6 +43,7 @@ class ConnectionPool:
 
     def insert_data(self, table_name: str, columns: list, data: list):
         conn = self.get_connection()
+        conn.set_client_encoding('UTF8')
         cursor = conn.cursor()
 
         columns_str = ','.join(columns)
