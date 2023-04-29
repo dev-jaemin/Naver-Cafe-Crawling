@@ -31,7 +31,6 @@ class NaverCafe:
             database=os.environ['DB_DATABASE']
         )
 
-
     def enter_id_pw(self, userid, userpw):
         self.driver.get('https://nid.naver.com/nidlogin.login')
 
@@ -53,8 +52,6 @@ class NaverCafe:
         while len(elements) == 0:
             time.sleep(0.01)
             elements = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
-
-            continue
 
         return elements
 
@@ -102,6 +99,7 @@ class NaverCafe:
 
             contents = []
             qnas = []
+            comments = []
 
             content = self._get_content(article_id, menu_id)
 
@@ -114,21 +112,29 @@ class NaverCafe:
             if qna[2]:
                 qnas.append(qna)
 
+            comments = comments + self._get_comments(article_id, menu_id)
+
             # 100개 단위로 DB에 저장
             if count % 100:
                 self.insert_content_to_DB(contents)
                 self.insert_qna_to_DB(qnas)
+                self.insert_comments_to_DB(comments)
 
                 contents.clear()
                 qnas.clear()
+                comments.clear()
 
             if len(contents) > 0:
                 self.insert_content_to_DB(contents)
                 contents.clear()
-            
+
             if len(qnas) > 0:
                 self.insert_qna_to_DB(qnas)
                 qnas.clear()
+
+            if len(comments) > 0:
+                self.insert_comments_to_DB(comments)
+                comments.clear()
 
         print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
 
@@ -189,7 +195,37 @@ class NaverCafe:
                 raise ValueError
         except:
             return (None, None, None, None, None)
-    
+
+    def _get_comments(self, article_id, menu_id):
+        kiwi = Kiwi()
+        comments = []
+
+        self._getElementsAfterWaiting("div.article_viewer")[0]
+        comment_elements = self.driver.find_elements(
+            By.CSS_SELECTOR, "span.text_comment")
+
+        for comment_element in comment_elements:
+            if comment_element:
+                # for double(or more) \n -> single \n
+                text = re.sub("\n+", "\n", comment_element.text.strip())
+                nickname = self._getElementsAfterWaiting(
+                    "div.comment_nick_info")[0].text.strip()
+
+                text = self.preprocessing.first_n_sentences(
+                    kiwi.split_into_sents(text), 2)
+                label_nickname = self.preprocessing.label_nickname(
+                    nickname)
+
+                if label_nickname:
+                    comments.append((
+                        article_id,
+                        menu_id,
+                        text,
+                        label_nickname
+                    ))
+
+        return comments
+
     def insert_content_to_DB(self, data):
         # 데이터 INSERT
         table_name = "content"
@@ -200,4 +236,10 @@ class NaverCafe:
         # 데이터 INSERT
         table_name = "qna"
         columns = ["article_id", "menu_id", "q", "a", "mbti"]
+        self.pool.insert_data(table_name, columns, data)
+
+    def insert_comments_to_DB(self, data):
+        # 데이터 INSERT
+        table_name = "comment"
+        columns = ["article_id", "menu_id", "text", "mbti"]
         self.pool.insert_data(table_name, columns, data)
