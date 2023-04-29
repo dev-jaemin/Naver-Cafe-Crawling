@@ -30,6 +30,7 @@ class NaverCafe:
             password=os.environ['DB_PASSWORD'],
             database=os.environ['DB_DATABASE']
         )
+        self.kiwi = Kiwi()
 
     def enter_id_pw(self, userid, userpw):
         self.driver.get('https://nid.naver.com/nidlogin.login')
@@ -48,10 +49,13 @@ class NaverCafe:
 
     def _getElementsAfterWaiting(self, css_selector):
         elements = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
+        t = 0
 
-        while len(elements) == 0:
+        # 찾거나, 일정 시간이 지나면 반복문 정지
+        while len(elements) == 0 and t < 2:
             time.sleep(0.01)
             elements = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
+            t += 0.01
 
         return elements
 
@@ -126,12 +130,9 @@ class NaverCafe:
         print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
 
     def _get_QNA(self, article_id, menu_id):
-        kiwi = Kiwi()
-
         article_element = self._getElementsAfterWaiting(
             "div.article_viewer")[0]
-        comment_elements = self.driver.find_elements(
-            By.CSS_SELECTOR, "span.text_comment")
+        comment_elements = self._getElementsAfterWaiting("span.text_comment")
         comment_element = comment_elements[0] if len(
             comment_elements) > 0 else None
 
@@ -146,9 +147,9 @@ class NaverCafe:
                 # For using only first/last n sentences.
                 # If you want to change n, change 100 to other number you want. (I recommend last_n = 3, first_n = 2)
                 question = self.preprocessing.last_n_sentences(
-                    kiwi.split_into_sents(content), 3)
+                    self.kiwi.split_into_sents(content), 3)
                 answer = self.preprocessing.first_n_sentences(
-                    kiwi.split_into_sents(comment), 2)
+                    self.kiwi.split_into_sents(comment), 2)
                 label_nickname = self.preprocessing.label_nickname(nickname)
 
                 if label_nickname:
@@ -167,12 +168,9 @@ class NaverCafe:
             return (None, None, None, None, None)
 
     def _get_comments(self, article_id, menu_id):
-        kiwi = Kiwi()
         comments = []
 
-        self._getElementsAfterWaiting("div.article_viewer")[0]
-        comment_elements = self.driver.find_elements(
-            By.CSS_SELECTOR, "span.text_comment")
+        comment_elements = self._getElementsAfterWaiting("span.text_comment")
 
         for comment_element in comment_elements:
             if comment_element:
@@ -182,7 +180,7 @@ class NaverCafe:
                     "div.comment_nick_info")[0].text.strip()
 
                 text = self.preprocessing.first_n_sentences(
-                    kiwi.split_into_sents(text), 2)
+                    self.kiwi.split_into_sents(text), 2)
                 label_nickname = self.preprocessing.label_nickname(
                     nickname)
 
