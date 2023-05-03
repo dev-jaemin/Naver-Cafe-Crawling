@@ -65,6 +65,7 @@ class NaverCafe:
         articleid_list = []
 
         for page in range(1, num_page + 1):
+            # ex. https://cafe.naver.com/mbticafe?iframe_url=/ArticleList.nhn%3Fsearch.clubid=11856775%26search.menuid=18%26userDisplay=50%26search.boardtype=L%26search.specialmenutype=%26search.totalCount=62%26search.cafeId=30853297%26search.page=500
             pageurl = f"https://cafe.naver.com/{self.name}?iframe_url=/ArticleList.nhn%3Fsearch.clubid={self.clubid}%26search.menuid={menu_id}%26userDisplay={str(userDisplay)}%26search.boardtype={boardtype}%26search.specialmenutype=%26search.totalCount=62%26search.cafeId=30853297%26search.page={str(page)}"
 
             self.driver.get(pageurl)
@@ -116,6 +117,7 @@ class NaverCafe:
                     qna_success_count += 1
                     qnas.append(qna)
                 else:
+                    print(f"fail : {article_id}")
                     qna_fail_count += 1
 
                 # comments = comments + self._get_comments(article_id, menu_id)
@@ -162,6 +164,10 @@ class NaverCafe:
                 
                 # 게시글 작성자가 댓글 단 경우 보지 않음.
                 if q_nickname == a_nickname:
+                    raise ValueError
+
+                # 게시글, 댓글이 너무 짧은 경우 저장하지 않음
+                if len(content) < 8 or len(comment) < 4:
                     raise ValueError
 
                 # For using only first/last n sentences.
