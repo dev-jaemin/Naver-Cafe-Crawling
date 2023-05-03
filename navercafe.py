@@ -94,6 +94,8 @@ class NaverCafe:
     def get_articles(self, menu_id, article_ids):
         boardtype = 'L'
         page = 1
+        qna_success_count = 0
+        qna_fail_count = 0
 
         for count, article_id in enumerate(article_ids):
             pageurl = f"https://cafe.naver.com/mbticafe?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D{self.clubid}%2526page%3D{page}%2526menu_id%3D{menu_id}%2526boardtype%3D{boardtype}%2526articleid%3D{article_id}%2526referrerAllArticles%3Dfalse"
@@ -101,12 +103,15 @@ class NaverCafe:
             self.driver.switch_to.frame("cafe_main")
 
             qnas = []
-            comments = []
+            # comments = []
 
             qna = self._get_QNA(article_id, menu_id)
             # If no reple, do not save
             if qna[2]:
+                qna_success_count += 1
                 qnas.append(qna)
+            else:
+                qna_fail_count += 1
 
             # comments = comments + self._get_comments(article_id, menu_id)
 
@@ -126,7 +131,10 @@ class NaverCafe:
             #     self.insert_comments_to_DB(comments)
             #     comments.clear()
 
+        print("===========================================================================")
         print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
+        print(f"success : {qna_success_count}, fail : {qna_fail_count}")
+        print("===========================================================================")
 
     def _get_QNA(self, article_id, menu_id):
         article_element = self._getElementsAfterWaiting(
