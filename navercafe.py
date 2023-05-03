@@ -139,10 +139,12 @@ class NaverCafe:
                     self.insert_qna_to_DB(qnas)
                     qnas.clear()
 
-                # if len(comments) > 0:
-                #     self.insert_comments_to_DB(comments)
-                #     comments.clear()
-            except:
+                    # if len(comments) > 0:
+                    #     self.insert_comments_to_DB(comments)
+                    #     comments.clear()
+            except Exception as e:
+                print(f"에러 발생 : {e}")
+            finally:
                 continue
 
         print("===========================================================================")
