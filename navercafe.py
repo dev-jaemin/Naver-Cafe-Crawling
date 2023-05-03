@@ -102,38 +102,41 @@ class NaverCafe:
         qna_fail_count = 0
 
         for count, article_id in enumerate(article_ids):
-            pageurl = f"https://cafe.naver.com/mbticafe?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D{self.clubid}%2526page%3D{page}%2526menu_id%3D{menu_id}%2526boardtype%3D{boardtype}%2526articleid%3D{article_id}%2526referrerAllArticles%3Dfalse"
-            self.driver.get(pageurl)
-            self.driver.switch_to.frame("cafe_main")
+            try:
+                pageurl = f"https://cafe.naver.com/mbticafe?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D{self.clubid}%2526page%3D{page}%2526menu_id%3D{menu_id}%2526boardtype%3D{boardtype}%2526articleid%3D{article_id}%2526referrerAllArticles%3Dfalse"
+                self.driver.get(pageurl)
+                self.driver.switch_to.frame("cafe_main")
 
-            qnas = []
-            # comments = []
+                qnas = []
+                # comments = []
 
-            qna = self._get_QNA(article_id, menu_id)
-            # If no reple, do not save
-            if qna[2]:
-                qna_success_count += 1
-                qnas.append(qna)
-            else:
-                qna_fail_count += 1
+                qna = self._get_QNA(article_id, menu_id)
+                # If no reple, do not save
+                if qna[2]:
+                    qna_success_count += 1
+                    qnas.append(qna)
+                else:
+                    qna_fail_count += 1
 
-            # comments = comments + self._get_comments(article_id, menu_id)
+                # comments = comments + self._get_comments(article_id, menu_id)
 
-            # 100개 단위로 DB에 저장
-            if count % 100:
-                self.insert_qna_to_DB(qnas)
-                # self.insert_comments_to_DB(comments)
+                # 100개 단위로 DB에 저장
+                if count % 100:
+                    self.insert_qna_to_DB(qnas)
+                    # self.insert_comments_to_DB(comments)
 
-                qnas.clear()
-                # comments.clear()
+                    qnas.clear()
+                    # comments.clear()
 
-            if len(qnas) > 0:
-                self.insert_qna_to_DB(qnas)
-                qnas.clear()
+                if len(qnas) > 0:
+                    self.insert_qna_to_DB(qnas)
+                    qnas.clear()
 
-            # if len(comments) > 0:
-            #     self.insert_comments_to_DB(comments)
-            #     comments.clear()
+                # if len(comments) > 0:
+                #     self.insert_comments_to_DB(comments)
+                #     comments.clear()
+            except Exception:
+                continue
 
         print("===========================================================================")
         print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
