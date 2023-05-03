@@ -135,7 +135,7 @@ class NaverCafe:
                 # if len(comments) > 0:
                 #     self.insert_comments_to_DB(comments)
                 #     comments.clear()
-            except Exception:
+            except:
                 continue
 
         print("===========================================================================")
@@ -149,7 +149,7 @@ class NaverCafe:
         comment_elements = self._getElementsAfterWaiting("span.text_comment")
         comment_element = comment_elements[0] if len(
             comment_elements) > 0 else None
-        q_nickname = self._getElementsAfterWaiting("button.nickname")[0].text
+        q_nickname = self._getElementsAfterWaiting("button.nickname")[0].text.strip()
         q_mbti = self.preprocessing.label_nickname(q_nickname)
 
         try:
@@ -157,8 +157,12 @@ class NaverCafe:
                 # for double(or more) \n -> single \n
                 content = re.sub("\n+", "\n", article_element.text.strip())
                 comment = re.sub("\n+", "\n", comment_element.text.strip())
-                nickname = self._getElementsAfterWaiting(
+                a_nickname = self._getElementsAfterWaiting(
                     "div.comment_nick_info")[0].text.strip()
+                
+                # 게시글 작성자가 댓글 단 경우 보지 않음.
+                if q_nickname == a_nickname:
+                    raise ValueError
 
                 # For using only first/last n sentences.
                 # If you want to change n, change 100 to other number you want. (I recommend last_n = 3, first_n = 2)
@@ -166,7 +170,7 @@ class NaverCafe:
                     self.kiwi.split_into_sents(content), 3)
                 answer = self.preprocessing.first_n_sentences(
                     self.kiwi.split_into_sents(comment), 2)
-                a_mbti = self.preprocessing.label_nickname(nickname)
+                a_mbti = self.preprocessing.label_nickname(a_nickname)
 
                 return (
                     article_id,
