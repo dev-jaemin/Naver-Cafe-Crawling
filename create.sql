@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS public.qna
 (
-    id integer NOT NULL DEFAULT nextval('qna_id_seq'::regclass),
+    id serial NOT NULL,
     article_id integer NOT NULL,
     menu_id integer NOT NULL,
     question character varying(500) COLLATE pg_catalog."default" NOT NULL,
