@@ -78,6 +78,10 @@ class NaverCafe:
             for row in table_rows:
                 # 공지, 추천글 제외
                 try:
+                    # 게시글에 사진 있을 시 제외
+                    if len(row.find_elements(By.CSS_SELECTOR, ".list-i-img")) > 0:
+                        raise NoSuchElementException
+
                     contents.append({
                         "inner_number": int(row.find_element(By.CSS_SELECTOR, '.inner_number').text.strip()),
                         "has_comment": len(row.find_elements(By.CSS_SELECTOR, '.cmt')) > 0
