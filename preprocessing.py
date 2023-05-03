@@ -16,8 +16,8 @@ class Preprocessing:
             if nickname.find(keyword) != -1:
                 return MBTI_KEYWORDS[keyword]
         
-        # if there is no keywords, return False
-        return False
+        # if there is no keywords, return None
+        return None
 
     def _get_mbti_keywords(self):
         prefixes = {

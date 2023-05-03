@@ -108,23 +108,23 @@ class NaverCafe:
             if qna[2]:
                 qnas.append(qna)
 
-            comments = comments + self._get_comments(article_id, menu_id)
+            # comments = comments + self._get_comments(article_id, menu_id)
 
             # 100개 단위로 DB에 저장
             if count % 100:
                 self.insert_qna_to_DB(qnas)
-                self.insert_comments_to_DB(comments)
+                # self.insert_comments_to_DB(comments)
 
                 qnas.clear()
-                comments.clear()
+                # comments.clear()
 
             if len(qnas) > 0:
                 self.insert_qna_to_DB(qnas)
                 qnas.clear()
 
-            if len(comments) > 0:
-                self.insert_comments_to_DB(comments)
-                comments.clear()
+            # if len(comments) > 0:
+            #     self.insert_comments_to_DB(comments)
+            #     comments.clear()
 
         print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
 
@@ -134,6 +134,8 @@ class NaverCafe:
         comment_elements = self._getElementsAfterWaiting("span.text_comment")
         comment_element = comment_elements[0] if len(
             comment_elements) > 0 else None
+        q_nickname = self._getElementsAfterWaiting("button.nickname")[0].text
+        q_mbti = self.preprocessing.label_nickname(q_nickname)
 
         try:
             if comment_element:
@@ -149,22 +151,21 @@ class NaverCafe:
                     self.kiwi.split_into_sents(content), 3)
                 answer = self.preprocessing.first_n_sentences(
                     self.kiwi.split_into_sents(comment), 2)
-                label_nickname = self.preprocessing.label_nickname(nickname)
+                a_mbti = self.preprocessing.label_nickname(nickname)
 
-                if label_nickname:
-                    return (
-                        article_id,
-                        menu_id,
-                        question,
-                        answer,
-                        label_nickname
-                    )
-                else:
-                    raise ValueError
+                return (
+                    article_id,
+                    menu_id,
+                    question,
+                    answer,
+                    q_mbti,
+                    a_mbti
+                
+                )
             else:
                 raise ValueError
         except:
-            return (None, None, None, None, None)
+            return (None, None, None, None, None, None)
 
     def _get_comments(self, article_id, menu_id):
         comments = []
@@ -196,7 +197,7 @@ class NaverCafe:
     def insert_qna_to_DB(self, data):
         # 데이터 INSERT
         table_name = "qna"
-        columns = ["article_id", "menu_id", "q", "a", "mbti"]
+        columns = ["article_id", "menu_id", "question", "answer", "q_mbti", "a_mbti"]
         self.pool.insert_data(table_name, columns, data)
 
     def insert_comments_to_DB(self, data):
