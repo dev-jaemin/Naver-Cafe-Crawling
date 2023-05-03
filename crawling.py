@@ -14,9 +14,10 @@ cafe = NaverCafe(cafe_name, club_id)
 # This is semi-automatic (needs manual authentication)
 cafe.enter_id_pw(os.environ['NAVER_ID'], os.environ['NAVER_PW'])
 
-# 3. get article board ids
-board_id = 18
-article_ids = cafe.get_article_ids(board_id, 10)
+board_ids = [11]
+for board_id in board_ids:
+    # 3. get article board ids
+    article_ids = cafe.get_article_ids(board_id, 500)
 
-# 4. get articles, QNA
-cafe.get_articles(board_id, article_ids)
+    # 4. get articles, QNA
+    cafe.get_articles(board_id, article_ids)

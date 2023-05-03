@@ -76,6 +76,11 @@ class NaverCafe:
             table_rows = self._getElementsAfterWaiting(
                 '.article-board > table > tbody > tr')
             contents = []
+
+            # 없는 페이지인 경우 break
+            if len(table_rows[0].find_elements(By.CSS_SELECTOR, ".nodata")) > 0:
+                break
+
             for row in table_rows:
                 # 공지, 추천글 제외
                 try:
