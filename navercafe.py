@@ -163,7 +163,7 @@ class NaverCafe:
         # For using only first/last n sentences.
         # If you want to change n, change 100 to other number you want. (I recommend last_n = 3, first_n = 2)
         question = self.preprocessing.last_n_sentences(
-            self.kiwi.split_into_sents(content), 3)
+            self.kiwi.split_into_sents(content), 4)
 
         if not get_multiple_ans:
             comment_elements = comment_elements[:1]
