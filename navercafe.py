@@ -104,8 +104,6 @@ class NaverCafe:
     def get_articles(self, menu_id, article_ids):
         boardtype = 'L'
         page = 1
-        qna_success_count = 0
-        qna_fail_count = 0
 
         for count, article_id in enumerate(article_ids):
             try:
@@ -116,20 +114,14 @@ class NaverCafe:
                 qnas = []
                 # comments = []
 
-                qna = self._get_QNA(article_id, menu_id)
-                # If no reple, do not save
-                if qna[2]:
-                    qna_success_count += 1
-                    qnas.append(qna)
-                else:
-                    print(f"fail : {article_id}")
-                    qna_fail_count += 1
+                qnas += self._get_QNA(article_id, menu_id, True)
 
                 # comments = comments + self._get_comments(article_id, menu_id)
 
                 # 100개 단위로 DB에 저장
-                if count % 100:
+                if count % 100 == 99:
                     self.insert_qna_to_DB(qnas)
+                    print(f"{count}th articles done")
                     # self.insert_comments_to_DB(comments)
 
                     qnas.clear()
@@ -149,55 +141,68 @@ class NaverCafe:
 
         print("===========================================================================")
         print(f"menu : {menu_id}'s {len(article_ids)} articles download done.")
-        print(f"success : {qna_success_count}, fail : {qna_fail_count}")
+        print(f"success : {count}")
         print("===========================================================================")
+    
+    def _get_QNA(self, article_id, menu_id, get_multiple_ans=False):
+        qnas = []
 
-    def _get_QNA(self, article_id, menu_id):
         article_element = self._getElementsAfterWaiting(
             "div.article_viewer")[0]
-        comment_elements = self._getElementsAfterWaiting("span.text_comment")
-        comment_element = comment_elements[0] if len(
-            comment_elements) > 0 else None
+        comment_elements = self._getElementsAfterWaiting(".CommentItem:not(.CommentItem--reply) .comment_box")
+
         q_nickname = self._getElementsAfterWaiting("button.nickname")[0].text.strip()
         q_mbti = self.preprocessing.label_nickname(q_nickname)
 
-        try:
-            if comment_element:
-                # for double(or more) \n -> single \n
-                content = re.sub("\n+", "\n", article_element.text.strip())
-                comment = re.sub("\n+", "\n", comment_element.text.strip())
-                a_nickname = self._getElementsAfterWaiting(
-                    "div.comment_nick_info")[0].text.strip()
+        # for double(or more) \n -> single whitespace
+        content = re.sub("\n+", " ", article_element.text.strip())
+
+        if self.preprocessing.has_ban_words(content):
+            return qnas
+
+        # For using only first/last n sentences.
+        # If you want to change n, change 100 to other number you want. (I recommend last_n = 3, first_n = 2)
+        question = self.preprocessing.last_n_sentences(
+            self.kiwi.split_into_sents(content), 3)
+
+        if not get_multiple_ans:
+            comment_elements = comment_elements[:1]
+
+        for comment_element in comment_elements:
+            try:
+                # for double(or more) \n -> single whitespace
+                comment = comment_element.find_element(By.CSS_SELECTOR, ".text_comment")
+                comment = re.sub("\n+", " ", comment.text.strip())
+
+                a_nickname = comment_element.find_element(By.CSS_SELECTOR,
+                    "div.comment_nick_info").text.strip()
                 
                 # 게시글 작성자가 댓글 단 경우 보지 않음.
                 if q_nickname == a_nickname:
-                    raise ValueError
+                    continue
 
                 # 게시글, 댓글이 너무 짧은 경우 저장하지 않음
                 if len(content) < 8 or len(comment) < 4:
-                    raise ValueError
+                    continue
 
-                # For using only first/last n sentences.
-                # If you want to change n, change 100 to other number you want. (I recommend last_n = 3, first_n = 2)
-                question = self.preprocessing.last_n_sentences(
-                    self.kiwi.split_into_sents(content), 3)
                 answer = self.preprocessing.first_n_sentences(
                     self.kiwi.split_into_sents(comment), 2)
                 a_mbti = self.preprocessing.label_nickname(a_nickname)
 
-                return (
+                qnas.append((
                     article_id,
                     menu_id,
                     question,
                     answer,
                     q_mbti,
                     a_mbti
-                
-                )
-            else:
-                raise ValueError
-        except:
-            return (None, None, None, None, None, None)
+                ))
+            except Exception as e:
+                print(f"에러 발생 : {e}")
+            finally:
+                continue
+
+        return qnas
 
     def _get_comments(self, article_id, menu_id):
         comments = []
@@ -228,7 +233,7 @@ class NaverCafe:
 
     def insert_qna_to_DB(self, data):
         # 데이터 INSERT
-        table_name = "qna"
+        table_name = "multiple_qna"
         columns = ["article_id", "menu_id", "question", "answer", "q_mbti", "a_mbti"]
         self.pool.insert_data(table_name, columns, data)
 
