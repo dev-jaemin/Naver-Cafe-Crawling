@@ -54,6 +54,11 @@ class Preprocessing:
         return '[SEP]'.join([t.text for t in first_n_tuple]) + '[SEP]'
     
     def has_ban_words(self, content):
-        ban_words = ['펑', '본문 삭제', '내용 삭제','글 삭제', '본문은 삭제', 'http', 'ㅈㄱㄴ', '제곧내', '제목이', '무물', '물어보세요', '질문받아요', '질문 받아요', '19금', 'ㅅㅂ', 'ㅈㄹ']
+        ban_words = ['펑', '본문 삭제', '내용 삭제','글 삭제', '본문은 삭제', 'http', 'ㅈㄱㄴ', '제곧내', '제목이', '무물', '물어보세요', '질문받아요', '질문 받아요', '19금', 'ㅅㅂ', '십알', 'ㅈㄹ', '새끼', 'ㄱㅅㄲ','ㄳㄲ', '개색', '엠헬']
+
+        return any(ban_word in content for ban_word in ban_words)
+    
+    def has_ban_comment_words(self, content):
+        ban_words = ['펑', '본문 삭제', '내용 삭제','글 삭제', 'http', '19금', 'ㅅㅂ', '십알', 'ㅈㄹ', '새끼', 'ㄱㅅㄲ','ㄳㄲ', '개색', '엠헬', '쓰니', '작성자', '댓글']
 
         return any(ban_word in content for ban_word in ban_words)

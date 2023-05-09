@@ -174,6 +174,9 @@ class NaverCafe:
                 comment = comment_element.find_element(By.CSS_SELECTOR, ".text_comment")
                 comment = re.sub("\n+", " ", comment.text.strip())
 
+                if self.preprocessing.has_ban_comment_words(comment):
+                    continue
+
                 a_nickname = comment_element.find_element(By.CSS_SELECTOR,
                     "div.comment_nick_info").text.strip()
                 
@@ -198,7 +201,7 @@ class NaverCafe:
                     a_mbti
                 ))
             except Exception as e:
-                print(f"에러 발생 : {e}")
+                print(f"에러 발생(삭제된 댓글 등) article : {article_id}")
             finally:
                 continue
 
