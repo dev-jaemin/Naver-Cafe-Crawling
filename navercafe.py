@@ -200,8 +200,11 @@ class NaverCafe:
                     q_mbti,
                     a_mbti
                 ))
+            except NoSuchElementException:
+                print(f"삭제된 댓글 article : {article_id}")
             except Exception as e:
-                print(f"에러 발생(삭제된 댓글 등) article : {article_id}")
+                print(f"에러 발생(삭제된 댓글 이외) article : {article_id}")
+                print(e)
             finally:
                 continue
 
