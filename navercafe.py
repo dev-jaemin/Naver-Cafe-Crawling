@@ -37,15 +37,19 @@ class NaverCafe:
 
         div_id = self.driver.find_element(By.ID, 'id')
         div_id.click()
-        pyperclip.copy(userid)
-        div_id.send_keys(Keys.CONTROL, 'v')
+        div_id.send_keys(userid)
 
         div_pw = self.driver.find_element(By.ID, 'pw')
         div_pw.click()
-        pyperclip.copy(userpw)
-        div_pw.send_keys(Keys.CONTROL, 'v')
+        div_pw.send_keys(userpw)
 
         self.driver.find_element(By.ID, 'log.login').click()
+        print("=======================**********중요*********========================")
+        print("브라우저 창에서 크롤링 방지 문자를 입력하라고 하는지 확인하세요.")
+        print("제한시간 30초 이내에 수동으로 로그인을 완료하셔야 합니다. 로그인 후 가만히 대기하세요.")
+        print("=======================**********중요*********========================")
+        time.sleep(30)
+        print("로그인 완료")
 
     def _getElementsAfterWaiting(self, css_selector):
         elements = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
