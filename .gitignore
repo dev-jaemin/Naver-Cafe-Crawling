@@ -3,7 +3,7 @@ __pycache__
 *.csv
 *.xlsx
 
-.env
+# .env
 
 test.py
 dataset/
