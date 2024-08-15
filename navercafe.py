@@ -2,7 +2,7 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 import pyperclip
@@ -18,7 +18,7 @@ class NaverCafe:
     def __init__(self, name, clubid):
         self.name = name
         self.clubid = clubid
-        self.driver = Chrome(service=Service(ChromeDriverManager().install()))
+        self.driver = Chrome(service=Service())
         self.driver.get(f"https://cafe.naver.com/{name}")
         self.preprocessing = Preprocessing()
         self.pool = ConnectionPool(
