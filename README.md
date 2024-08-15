@@ -26,8 +26,11 @@ pip3 install requiremets.txt
 DB는 각자 실행 환경에 맞추어 적절히 수정하시면 됩니다.
 
 - CAFE_NAME 아는 방법
-
+    - 네이버 카페 접속 후 주소창 보면 맨 뒤의 단어입니다.
+    - ex. 주소가 https://cafe.naver.com/mbticafe 이라면 `mbticafe` 가 됩니다.
 - CAFE_ID 아는 방법
+    - 카페 접속 후 상단 배너에 마우스 가져다 대면 좌측 하단에 `https://cafe.naver.com/MyCafeIntro.nhn?clubid=11856775` 처럼 clubId가 뜨는데 이 부분을 가져오면 됩니다.
+<img width="2143" alt="스크린샷 2024-08-15 오후 12 13 56" src="https://github.com/user-attachments/assets/1f9c19ec-cdc7-4054-932e-0d65b333d221">
 
 ex
 ```
@@ -46,7 +49,10 @@ DB_DATABASE=crawling
 4. `main.py` 실행
     - 크롤링하고 싶은 게시판 id를 공백을 구분자로 입력하시면 됩니다.(ex. 11 12 13)
         - 게시판 id 아는 방법
-    - 게시판당 크롤링하고 싶은 페이지 수를 입력하세요.
+            - 게시판 접속 후 아무 게시글이나 마우스 가져다 대면 좌측 하단에 주소가 보입니다. 그 중 menuid 부분의 숫자를 찾으시면 됩니다.
+                <img width="1502" alt="스크린샷 2024-08-15 오후 12 18 01" src="https://github.com/user-attachments/assets/97206dab-0055-41a1-a9b1-e3c55ae37152">
+
+    - 그 후, 게시판당 크롤링하고 싶은 페이지 수를 입력하세요.
 
 5. 결과 확인
     - 1에서 준비한 postgresql 서버에 접속하면 확인하실 수 있습니다.
