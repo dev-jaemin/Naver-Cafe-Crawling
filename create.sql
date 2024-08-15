@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS public.qna
     a_mbti character(4) COLLATE pg_catalog."default",
     CONSTRAINT qna_pkey PRIMARY KEY (id)
 )
-
 TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.qna
@@ -30,3 +29,7 @@ CREATE TABLE IF NOT EXISTS public.multiple_qna
     a_mbti character(4) COLLATE pg_catalog."default",
     CONSTRAINT multiple_qna_pkey PRIMARY KEY (id)
 )
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.multiple_qna
+    OWNER to postgres;
